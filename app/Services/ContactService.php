@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contact;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class ContactService
 {
@@ -48,5 +49,15 @@ class ContactService
     public function delete(Contact $contact): void
     {
         $contact->delete();
+    }
+
+    public function allSimple(): Collection
+    {
+        return Contact::orderBy('name')->get(['id', 'name', 'email']);
+    }
+
+    public function allRoles(): Collection
+    {
+        return \App\Models\ContactRole::orderBy('name')->get(['id', 'name']);
     }
 }

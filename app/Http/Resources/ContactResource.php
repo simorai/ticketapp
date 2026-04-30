@@ -15,7 +15,7 @@ class ContactResource extends JsonResource
             'email'          => $this->email,
             'phone'          => $this->phone,
             'mobile'         => $this->mobile,
-            'role'           => $this->whenLoaded('role', fn () => ['id' => $this->role?->id, 'name' => $this->role?->name]),
+            'role'           => $this->whenLoaded('role', fn () => $this->role ? ['id' => $this->role->id, 'name' => $this->role->name] : null),
             'entities'       => $this->whenLoaded('entities', fn () => $this->entities->map(fn ($e) => ['id' => $e->id, 'name' => $e->name])),
             'internal_notes' => $this->when($request->user()?->isOperator(), $this->internal_notes),
         ];

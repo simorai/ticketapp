@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\Contact;
 use App\Models\Ticket;
+use App\Models\TicketAttachment;
+use App\Models\TicketMessage;
 use App\Models\TicketStatus;
 use App\Models\TicketType;
 use App\Models\User;
@@ -57,6 +60,21 @@ class TicketService
     {
         $defaultStatus = TicketStatus::default()->firstOrFail();
 
+        // For customer users, auto-resolve contact and entity from their profile
+        if (!$user->isOperator() && empty($data['contact_id'])) {
+            $contact = $user->contact()->with('entities')->first();
+            $data['contact_id'] = $contact?->id;
+            if (empty($data['entity_id'])) {
+                $data['entity_id'] = $contact?->entities->first()?->id;
+            }
+        }
+
+        // For all users: if entity_id is still empty but contact_id is set, derive entity from contact
+        if (empty($data['entity_id']) && !empty($data['contact_id'])) {
+            $contact = Contact::with('entities')->find($data['contact_id']);
+            $data['entity_id'] = $contact?->entities->first()?->id;
+        }
+
         $ticket = Ticket::create([
             'number'           => Ticket::generateNumber(),
             'subject'          => $data['subject'],
@@ -81,6 +99,27 @@ class TicketService
             'action'    => 'created',
             'payload'   => null,
         ]);
+
+        // Create the initial message (no reply notification — creation notification covers this)
+        if (!empty($data['message'])) {
+            $ticketMessage = TicketMessage::create([
+                'ticket_id'   => $ticket->id,
+                'body'        => $data['message'],
+                'user_id'     => $user->id,
+                'is_internal' => false,
+            ]);
+
+            foreach (($data['attachments'] ?? []) as $file) {
+                $path = $file->store('tickets/attachments', 'public');
+                TicketAttachment::create([
+                    'ticket_message_id' => $ticketMessage->id,
+                    'original_name'     => $file->getClientOriginalName(),
+                    'path'              => $path,
+                    'mime_type'         => $file->getMimeType(),
+                    'size'              => $file->getSize(),
+                ]);
+            }
+        }
 
         $ticket->load(['inbox', 'status', 'type', 'operator', 'entity', 'contact', 'knowledgeEmails']);
 
@@ -150,5 +189,39 @@ class TicketService
     public function allTypes(): Collection
     {
         return TicketType::orderBy('name')->get();
+    }
+
+    public function createType(array $data): TicketType
+    {
+        return TicketType::create($data);
+    }
+
+    public function updateType(TicketType $ticketType, array $data): TicketType
+    {
+        $ticketType->update($data);
+
+        return $ticketType->fresh();
+    }
+
+    public function deleteType(TicketType $ticketType): void
+    {
+        $ticketType->delete();
+    }
+
+    public function createStatus(array $data): TicketStatus
+    {
+        return TicketStatus::create($data);
+    }
+
+    public function updateStatus(TicketStatus $ticketStatus, array $data): TicketStatus
+    {
+        $ticketStatus->update($data);
+
+        return $ticketStatus->fresh();
+    }
+
+    public function deleteStatus(TicketStatus $ticketStatus): void
+    {
+        $ticketStatus->delete();
     }
 }

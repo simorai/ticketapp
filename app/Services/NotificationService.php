@@ -15,7 +15,7 @@ class NotificationService
         $recipients = $this->buildRecipients($ticket, includeOperator: true);
 
         foreach ($recipients as $email) {
-            Mail::to($email)->queue(new TicketCreatedMail($ticket));
+            Mail::to($email)->send(new TicketCreatedMail($ticket));
         }
     }
 
@@ -25,8 +25,16 @@ class NotificationService
         $recipients = $this->buildRecipients($ticket, includeOperator: $includeOperator);
 
         foreach ($recipients as $email) {
-            Mail::to($email)->queue(new TicketRepliedMail($ticket, $message));
+            Mail::to($email)->send(new TicketRepliedMail($ticket, $message));
         }
+    }
+
+    /**
+     * Send a test email to the given address to verify mail delivery is working.
+     */
+    public function sendTestEmail(Ticket $ticket, string $to): void
+    {
+        Mail::to($to)->send(new TicketCreatedMail($ticket));
     }
 
     private function buildRecipients(Ticket $ticket, bool $includeOperator = false): array

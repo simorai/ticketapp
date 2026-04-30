@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('ticket_status_id')->constrained()->restrictOnDelete();
             $table->foreignId('operator_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('entity_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('contact_id')->constrained()->restrictOnDelete();
+            $table->foreignId('contact_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();

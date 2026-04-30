@@ -84,12 +84,23 @@ class Ticket extends Model
     public function scopeForUser(Builder $query, User $user): Builder
     {
         if ($user->isCustomer()) {
-            $contact = $user->contact()->with('entities')->first();
+            $contact   = $user->contact()->with('entities')->first();
             $entityIds = $contact ? $contact->entities->pluck('id') : [];
+            $contactId = $contact?->id;
 
-            return $query->whereIn('entity_id', $entityIds);
+            return $query->where(function (Builder $q) use ($entityIds, $contactId) {
+                $q->whereIn('entity_id', $entityIds);
+                if ($contactId) {
+                    $q->orWhere('contact_id', $contactId);
+                }
+            });
         }
 
-        return $query;
+        // Operators only see tickets from inboxes they are assigned to
+        return $query->whereHas('inbox', fn ($q) =>
+            $q->whereHas('operators', fn ($q2) =>
+                $q2->where('users.id', $user->id)
+            )
+        );
     }
 }

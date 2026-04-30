@@ -2,11 +2,25 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Inertia\Middleware;
+use Symfony\Component\HttpFoundation\Response;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * Disable JsonResource data-wrapping for all Inertia web responses.
+     * API routes (routes/api.php) are not affected since they bypass this middleware.
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        JsonResource::withoutWrapping();
+
+        return parent::handle($request, $next);
+    }
+
     /**
      * The root template that's loaded on the first page visit.
      *

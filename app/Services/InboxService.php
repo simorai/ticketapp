@@ -10,7 +10,7 @@ class InboxService
 {
     public function all(): Collection
     {
-        return Inbox::withCount('operators')->orderBy('name')->get();
+        return Inbox::with('operators:id,name')->withCount('operators')->orderBy('name')->get();
     }
 
     public function allSimple(): Collection
